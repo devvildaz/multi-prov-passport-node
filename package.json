@@ -1,0 +1,28 @@
+{
+  "name": "passport-multi",
+  "version": "1.0.0",
+  "description": "This is a multi strategy passport",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^27.3.1",
+    "nodemon": "^2.0.15",
+    "supertest": "^6.1.6"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.5",
+    "crypto": "^1.0.1",
+    "express": "^4.17.1",
+    "express-session": "^1.17.2",
+    "md5": "^2.3.0",
+    "passport": "^0.5.0",
+    "passport-local": "^1.0.0",
+    "sqlite3": "^5.0.2"
+  }
+}
