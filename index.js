@@ -1,23 +1,23 @@
 const express = require('express');
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const router = require('./routes/router');
+require('./config/db')
+	.sync({ force : true }).then((res)=>{
+		console.log('database synced');
+	}).catch((err) => {
+		console.err('error with sync');
+	});
 
-const { findUser } = require('./utils/passportUtils');
 
 const app = express();
 
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(session({ secret: 'keyboard cat' }));
 
-app.use(passport.initialize());
-app.use(passport.session());
+app.use('/', router);
 
-
-app.get('/', (req, res) => {
-	return res.send('Hello World');
-});
 
 app.listen(3000, () => {
 	console.log('Server Initialized and Running');
