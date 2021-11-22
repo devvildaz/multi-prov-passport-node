@@ -1,30 +1,51 @@
-const passport = require('passport');
-const JwtStrategy = require('passport-jwt').Strategy, 
-	ExtractJwt = require('passport-jwt').ExtractJwt;
-const {Op} = require('sequelize');
-const db = require('./db');
-const User = require('../models/User');
-const { validPassword } =require('../utils/passportUtils');
+const passport = require("passport");
+const { Op } = require("sequelize");
+const db = require("./db");
+const User = require("../models/User");
+const { validPassword } = require("../utils/passportUtils");
+const localStrategy = require('passport-local').Strategy;
+const JWTstrategy = require('passport-jwt').Strategy;
+const ExtractJWT = require('passport-jwt').ExtractJwt;
 
-const options = {
-	jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-	secretOrKey: 'secret',
-	algoritms: ['SHA256']
-};
+passport.use(
+  new JWTstrategy(
+    {
+      secretOrKey: 'TOP_SECRET',
+      jwtFromRequest: ExtractJWT.fromUrlQueryParameter('secret_token')
+    },
+    async (token, done) => {
+      try {
+        return done(null, token.user);
+      } catch (error) {
+        done(error);
+      }
+    }
+  )
+);
 
-passport.use(new JwtStrategy(
-	options,
-	async (jwt_payload, done) => {
-		let user = await User.findOne({
-			where: {
-				id: jwt_payload.sub
-			}
-		});
+passport.use(
+  "login",
+  new localStrategy(async (username, password, done) => {
+    try {
+      const user = await User.findOne({
+        where: {
+          username: username,
+        },
+      });
 
-		if(!user) {
-			return done(null, false, { message: 'User not founded' });
-		}
+      if (!user) {
+        return done(null, false, { message: "User not found" });
+      }
 
-		return done(null, user);
-	}
-));
+      const validate = validPassword(user.password, password, user.salt );
+
+      if (!validate) {
+        return done(null, false, { message: "Wrong Password" });
+      }
+
+      return done(null, user);
+    } catch (error) {
+      return done(error, null);
+    }
+  })
+);

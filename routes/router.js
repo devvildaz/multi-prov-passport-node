@@ -1,44 +1,47 @@
-const express = require('express');
+const express = require("express");
+const jwt = require('jsonwebtoken');
 const router = express.Router();
-const { Op } = require('sequelize');
-const passport = require('passport');
-require('../config/passport');
-const User = require('../models/User');
-const { validPassword, issueJWT } = require('../utils/passportUtils');
+const { Op } = require("sequelize");
+const passport = require("passport");
+require("../config/passport");
+const User = require("../models/User");
+const { validPassword, issueJWT } = require("../utils/passportUtils");
 
 router.use(passport.initialize());
-router.post('/register/local/', async (req,res) => {
-	let reg = req.body;
+router.post("/register/local/", async (req, res) => {
+  let reg = req.body;
 
-	try {
-		let user = await User.create(reg); 
-		return res.json(user);
-	}
-	catch (err){
-		res.statusMessage = 'User already exists';
-		return res.status(400).end();
-	}
+  try {
+    let user = await User.create(reg);
+    return res.json({ success: true, id: user.id, username: user.username });
+  } catch (err) {
+    return res.status(400).json({ success: false, message: "User already exists" });
+  }
 });
 
-router.post('/login/local', async function(req,res,next) {
-	let user = await User.findOne({
-		where: {
-			username:  req.body.username
-		}
-	});
+router.post("/login/local", async (req, res, next) => {
+  passport.authenticate("login", async (err, user, info) => {
+    try {
+      if (err) {
+        return res.status(400).json({ success: false, message: 'Error with Database' });
+      } 
 
-	if(!user) {
-		return res.status(401).json({ success: false, msg: 'User doesnt exist' });
-	}
+	  if(info){
+		return res.status(400).json({ success: false, message: info.message });
+	  }
 
-	const isValid = validPassword(user.password, req.body.password, user.salt);
-	if(!isValid){
-		return res.status(401).json({ success: false, msg: 'Incorrect password'});
-	} else {
-		const tokenObj = issueJWT(user.id);
-		return res.status(200).json({ success: true, token : tokenObj.token, expiresIn: tokenObj.expires }); 
-	}
+      req.login(user, { session: false }, async (error) => {
+        if (error) return next(error);
 
+        const body = { _id: user._id, email: user.email };
+        const token = jwt.sign({ user: body }, "TOP_SECRET");
+
+        return res.json({ success: true , token });
+      });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: 'Error with JSON Token' });
+    }
+  })(req, res, next);
 });
 
-module.exports = router; 
+module.exports = router;

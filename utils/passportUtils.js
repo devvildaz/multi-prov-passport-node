@@ -1,8 +1,6 @@
 const crypto = require('crypto');
 const jsonwebtoken = require('jsonwebtoken');
 const fs = require('fs');
-const PRIV_KEY = fs.readFileSync('~/.ssh/id_rsa', 'utf8');
-const PUB_KEY = fs.readFileSync('~/.ssh/id_rsa.pub', 'utf8');
 
 exports.hashPassword = (password) => {
 	let salt = crypto.randomBytes(16).toString();
@@ -26,7 +24,7 @@ exports.issueJWT = (user) => {
 	}
 	
 	const signedToken = jsonwebtoken
-		.sign(payload, PRIV_KEY, { expiresIn:expiresIn, algorithm: 'SHA256' });
+		.sign(payload, 'TOP_SECRET', { expiresIn:expiresIn, algorithm: 'SHA256' });
 	
 	return {
 		token: "Bearer "+signedToken,
