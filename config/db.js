@@ -5,9 +5,6 @@ const db = new Sequelize({
   storage: DBSOURCE,
 });
 
-const connect = async () => {
-  await db.authenticate();
-  await db.sync({ force: true });
-};
+db.authenticate();
 
-module.exports = connect;
+module.exports = db;
