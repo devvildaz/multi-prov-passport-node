@@ -1,21 +1,23 @@
+require('dotenv').config();
 const passport = require("passport");
-const { Op } = require("sequelize");
-const db = require("./db");
-const User = require("../models/User");
-const { validPassword } = require("../utils/passportUtils");
-const localStrategy = require('passport-local').Strategy;
 const JWTstrategy = require('passport-jwt').Strategy;
-const ExtractJWT = require('passport-jwt').ExtractJwt;
 
 passport.use(
   new JWTstrategy(
     {
-      secretOrKey: 'TOP_SECRET',
-      jwtFromRequest: ExtractJWT.fromUrlQueryParameter('secret_token')
+      secretOrKey: process.env.SECRET,
+      jwtFromRequest: (req) => {
+        let token = null;
+        if(req && req.cookies) 
+        {
+          token = req.cookies['jwt'];
+        }
+        return token;
+      }
     },
     async (token, done) => {
       try {
-        return done(null, token.user);
+        return done(null, token);
       } catch (error) {
         done(error);
       }
@@ -23,29 +25,15 @@ passport.use(
   )
 );
 
-passport.use(
-  "login",
-  new localStrategy(async (username, password, done) => {
-    try {
-      const user = await User.findOne({
-        where: {
-          username: username,
-        },
-      });
+// passport.serializeUser((user, cb) => {
+//   console.log('serializeUser');
+//   console.log(user);
+//   cb(null, user);
+// })
 
-      if (!user) {
-        return done(null, false, { message: "User not found" });
-      }
+// passport.deserializeUser((user, cb) => {
+//   console.log('deser')
+//   cb(null, user)
+// })
 
-      const validate = validPassword(user.password, password, user.salt );
-
-      if (!validate) {
-        return done(null, false, { message: "Wrong Password" });
-      }
-
-      return done(null, user);
-    } catch (error) {
-      return done(error, null);
-    }
-  })
-);
+module.exports = passport;

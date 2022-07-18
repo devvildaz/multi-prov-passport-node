@@ -1,33 +1,25 @@
+require('dotenv').config();
 const crypto = require('crypto');
 const jsonwebtoken = require('jsonwebtoken');
 const fs = require('fs');
+const dayjs = require('dayjs');
 
-exports.hashPassword = (password) => {
-	let salt = crypto.randomBytes(16).toString();
-	let hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-	return [salt, hash];
+exports.hashPassword = (password) => {;
+	let hash = crypto.pbkdf2Sync(password, process.env.SALT, 1000, 64, 'sha512').toString('hex');
+	return hash;
 }
 
 exports.validPassword = (pass0, pass1, salt) => {
-	let hash2 = crypto.pbkdf2Sync(pass1, salt, 1000, 64, 'sha512').toString('hex');
+	let hash2 = crypto.pbkdf2Sync(pass1, process.env.SALT, 1000, 64, 'sha512').toString('hex');
 	return pass0 === hash2;
 }
 
 
 exports.issueJWT = (user) => {
-	const id = user.id;
-	const expiresIn = '1d';
-
 	const payload = {
-		sub: id,
-		iat: Date.now()
-	}
-	
+		id: user.id,
+	};
 	const signedToken = jsonwebtoken
-		.sign(payload, 'TOP_SECRET', { expiresIn:expiresIn, algorithm: 'SHA256' });
-	
-	return {
-		token: "Bearer "+signedToken,
-		expires: expiresIn
-	}
+		.sign(payload, process.env.SECRET, { expiresIn: '1d' });
+	return signedToken;
 }

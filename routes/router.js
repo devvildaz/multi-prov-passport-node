@@ -1,47 +1,67 @@
 const express = require("express");
-const jwt = require('jsonwebtoken');
 const router = express.Router();
-const { Op } = require("sequelize");
-const passport = require("passport");
-require("../config/passport");
-const User = require("../models/User");
-const { validPassword, issueJWT } = require("../utils/passportUtils");
+const db = require('../models/index');
+const { Op } = require('sequelize');
+const passUtils = require('../utils/passportUtils');
+const dayjs = require("dayjs");
+const passport = require('passport');
+router.get('/info', async (req,res) => {
+  res.send('hello');
+})
 
-router.use(passport.initialize());
-router.post("/register/local/", async (req, res) => {
-  let reg = req.body;
-
+router.post('/user/', async (req,res) => {
   try {
-    let user = await User.create(reg);
-    return res.json({ success: true, id: user.id, username: user.username });
+    let created_user = await db.AppUser.create({ 
+      name: req.body['username'], 
+      password: req.body['password'],
+      email: req.body['email'],
+      issuer: req.body['issuer']
+    });
+    created_user.save();
+    return res.json({ success: true, id: created_user.id, username: created_user.name })
   } catch (err) {
-    return res.status(400).json({ success: false, message: "User already exists" });
+    return res.status(400).json({
+      success: false, message: err.message, errors: err.errors.map((item) => item.message)
+    })
   }
 });
 
-router.post("/login/local", async (req, res, next) => {
-  passport.authenticate("login", async (err, user, info) => {
-    try {
-      if (err) {
-        return res.status(400).json({ success: false, message: 'Error with Database' });
-      } 
+router.post('/user/login', async (req,res) => {
+  
+  try{
+    const user_target = (await db.AppUser.findAll({
+      where: {
+        [Op.or] :  { name: req.body['identifier'], email: req.body['identifier'] }
+      }
+    }))[0];
+    
 
-	  if(info){
-		return res.status(400).json({ success: false, message: info.message });
-	  }
+    if(!( user_target && passUtils.validPassword(user_target.password, req.body['password']) )) { 
+      throw Error("invalid user and/or password")
+    };
+  
+    let token = passUtils.issueJWT(user_target);
 
-      req.login(user, { session: false }, async (error) => {
-        if (error) return next(error);
+    res.cookie('jwt', token ,{
+      httpOnly: false,
+      expires: dayjs().add(1, "day").toDate()
+    });
 
-        const body = { _id: user._id, email: user.email };
-        const token = jwt.sign({ user: body }, "TOP_SECRET");
-
-        return res.json({ success: true , token });
-      });
-    } catch (error) {
-      return res.status(400).json({ success: false, message: 'Error with JSON Token' });
-    }
-  })(req, res, next);
+    res.status(200).json({
+      success: true,
+      message: 'user is valid',
+    });
+  } catch (e){
+    res.status(403).json({
+      success: false,
+      message: e.message 
+    })
+  }
 });
+
+router.get('/user/profile', passport.authenticate('jwt', { session : false }) , (req, res) => {
+  res.json(req.user);
+});
+
 
 module.exports = router;

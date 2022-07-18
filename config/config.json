@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "sqlclient",
+    "password": "H3ll0W0rld",
+    "database": "express_mysql",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "sqlclient",
+    "password": "H3ll0W0rld",
+    "database": "express_mysql",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "sqlclient",
+    "password": "H3ll0W0rld",
+    "database": "express_mysql",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  }
+}
